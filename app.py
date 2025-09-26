@@ -1,14 +1,11 @@
-
 from dotenv import load_dotenv
 
 load_dotenv()
-
 
 import streamlit as st
 import os
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from langchain.chains import LLMChain
 
 # --------------------------------------------------------------------------------
 # 1. LangChainを使用したLLM処理関数の定義
@@ -26,8 +23,7 @@ def generate_llm_response_with_langchain(input_text: str, selected_style_instruc
         LLMの回答テキスト。
     """
     
-    # 1. PromptTemplateの定義 (Lesson8の参考に基づき、2つの変数を組み込む)
-    # {style_instruction} でラジオボタンの選択値を、{user_input} でテキストエリアの入力を受け取る
+    # 1. PromptTemplateの定義
     template = """
     あなたは親切なAIアシスタントです。
     以下の「回答スタイル」に従って、ユーザーから提供された「入力テキスト」を処理し、回答を生成してください。
@@ -48,24 +44,23 @@ def generate_llm_response_with_langchain(input_text: str, selected_style_instruc
     )
 
     # 2. LLMの初期化
-    # LangChainでは、環境変数 OPENAI_API_KEY が自動で使われます。
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7)
 
-    # 3. LLMChainの作成
-    # プロンプトとLLMを連結します
-    chain = LLMChain(llm=llm, prompt=prompt)
-
-    # 4. チェーンの実行と回答の取得
+    # 3. チェーンの作成と実行（新しい方法）
     try:
-        # 入力テキストと選択値をPromptTemplateの変数に渡して実行
+        # プロンプトとLLMを組み合わせたチェーンを作成
+        chain = prompt | llm
+        
+        # チェーンを実行
         response = chain.invoke(
             {
                 "style_instruction": selected_style_instruction,
                 "user_input": input_text
             }
         )
-        # 実行結果からテキストを抽出して返す
-        return response['text']
+        
+        # レスポンスからテキストを抽出
+        return response.content
         
     except Exception as e:
         return f"LangChain/OpenAI APIからの応答エラーが発生しました。詳細: {e}"
